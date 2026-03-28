@@ -49,7 +49,7 @@ let gameRunning = false;
 let gameOver = false;
 let startTime = 0;
 
-// Initialize rocket position (bottom-left with offset)
+// Initialize rocket position (bottom-left offset)
 function setRocketStart() {
   rocket.x = canvas.width * (1 / 8);
   rocket.y = canvas.height * (7 / 8);
@@ -181,12 +181,14 @@ function update() {
   if (rocket.y > canvas.height) rocket.y = 0;
 }
 
-// Trajectory with collision stop
+// 🔮 Improved trajectory prediction
 function drawTrajectory() {
   let simX = rocket.x;
   let simY = rocket.y;
   let simVX = rocket.vx;
   let simVY = rocket.vy;
+
+  const TIME_STEP = 0.5;
 
   ctx.beginPath();
 
@@ -196,6 +198,7 @@ function drawTrajectory() {
       const dy = planet.y - simY;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
+      // Stop if collision would occur
       if (distance < planet.radius + rocket.radius) {
         ctx.lineTo(simX, simY);
         ctx.strokeStyle = "rgba(255,255,255,0.3)";
@@ -206,12 +209,16 @@ function drawTrajectory() {
       const force = (G * planet.mass) / (distance * distance);
       const angle = Math.atan2(dy, dx);
 
-      simVX += Math.cos(angle) * force;
-      simVY += Math.sin(angle) * force;
+      simVX += Math.cos(angle) * force * TIME_STEP;
+      simVY += Math.sin(angle) * force * TIME_STEP;
     }
 
-    simX += simVX;
-    simY += simVY;
+    // Apply friction (critical for accuracy)
+    simVX *= FRICTION;
+    simVY *= FRICTION;
+
+    simX += simVX * TIME_STEP;
+    simY += simVY * TIME_STEP;
 
     if (i === 0) ctx.moveTo(simX, simY);
     else ctx.lineTo(simX, simY);
@@ -270,7 +277,7 @@ function draw() {
     ctx.fillText(`${elapsed}s`, canvas.width - 20, canvas.height - 20);
   }
 
-  // Fuel bar (bottom left)
+  // Fuel bar
   const barWidth = 150;
   const barHeight = 15;
   const fuelPercent = fuel / MAX_FUEL;
