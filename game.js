@@ -4,6 +4,7 @@ import {
   setFuel,
   MAX_FUEL,
   planets,
+  fuelPickups,
   setRocketStart,
   generatePlanets,
 } from "./entities.js";
@@ -80,11 +81,25 @@ function update(canvas) {
   if (keys.ArrowUp && fuel > 0) {
     rocket.vx += Math.cos(rocket.angle) * THRUST;
     rocket.vy += Math.sin(rocket.angle) * THRUST;
-    setFuel(fuel - 0.2);
+    setFuel(Math.max(fuel - 0.2, 0));
   }
 
   const collision = applyPhysics(rocket);
   if (collision) gameOver = true;
+
+  // Fuel pickup collision
+  for (let i = fuelPickups.length - 1; i >= 0; i--) {
+    const pickup = fuelPickups[i];
+
+    const dx = pickup.x - rocket.x;
+    const dy = pickup.y - rocket.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < pickup.radius + rocket.radius) {
+      setFuel(Math.min(fuel + 30, MAX_FUEL));
+      fuelPickups.splice(i, 1);
+    }
+  }
 }
 
 function draw(canvas) {
@@ -97,6 +112,15 @@ function draw(canvas) {
     ctx.arc(planet.x, planet.y, planet.radius, 0, Math.PI * 2);
     ctx.strokeStyle = "blue";
     ctx.stroke();
+  });
+
+  // Fuel pickups
+  ctx.fillStyle = "yellow";
+  ctx.font = "14px Arial";
+  ctx.textAlign = "center";
+
+  fuelPickups.forEach((pickup) => {
+    ctx.fillText("F", pickup.x, pickup.y);
   });
 
   // Trajectory
@@ -126,10 +150,24 @@ function draw(canvas) {
 
   // Timer
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  ctx.fillStyle = "white";
   ctx.fillText(`${elapsed}s`, canvas.width - 60, canvas.height - 20);
 
   // Fuel bar
-  ctx.fillRect(20, canvas.height - 30, 150 * (fuel / MAX_FUEL), 10);
+  const barWidth = 150;
+  const barHeight = 10;
+  const fuelPercent = fuel / MAX_FUEL;
+
+  ctx.strokeStyle = "white";
+  ctx.strokeRect(20, canvas.height - 30, barWidth, barHeight);
+
+  ctx.fillStyle = "lime";
+  ctx.fillRect(
+    20,
+    canvas.height - 30,
+    barWidth * fuelPercent,
+    barHeight
+  );
 
   if (gameOver) {
     ctx.fillText("Game Over - Press Space", canvas.width / 2, canvas.height / 2);
