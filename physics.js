@@ -5,7 +5,7 @@ const FRICTION = 0.999;
 
 // Apply gravity + movement
 export function applyPhysics(rocket) {
-  planets.forEach((planet) => {
+  for (let planet of planets) {
     const dx = planet.x - rocket.x;
     const dy = planet.y - rocket.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -20,13 +20,21 @@ export function applyPhysics(rocket) {
 
     rocket.vx += Math.cos(angle) * force;
     rocket.vy += Math.sin(angle) * force;
-  });
+  }
 
+  // Apply velocity
   rocket.x += rocket.vx;
   rocket.y += rocket.vy;
 
+  // Friction
   rocket.vx *= FRICTION;
   rocket.vy *= FRICTION;
+
+  // ✅ Screen wrap
+  if (rocket.x < 0) rocket.x = window.innerWidth;
+  if (rocket.x > window.innerWidth) rocket.x = 0;
+  if (rocket.y < 0) rocket.y = window.innerHeight;
+  if (rocket.y > window.innerHeight) rocket.y = 0;
 
   return false;
 }
