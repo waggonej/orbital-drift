@@ -1,18 +1,17 @@
-import { planets } from "./entities.js";
+import { planets, asteroids } from "./entities.js";
 
 const G = 0.5;
 const FRICTION = 0.999;
 
-// Apply gravity + movement
+// Rocket physics
 export function applyPhysics(rocket) {
   for (let planet of planets) {
     const dx = planet.x - rocket.x;
     const dy = planet.y - rocket.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Collision
     if (distance < planet.radius + rocket.radius) {
-      return true; // signal collision
+      return true;
     }
 
     const force = (G * planet.mass) / (distance * distance);
@@ -22,15 +21,13 @@ export function applyPhysics(rocket) {
     rocket.vy += Math.sin(angle) * force;
   }
 
-  // Apply velocity
   rocket.x += rocket.vx;
   rocket.y += rocket.vy;
 
-  // Friction
   rocket.vx *= FRICTION;
   rocket.vy *= FRICTION;
 
-  // ✅ Screen wrap
+  // Screen wrap
   if (rocket.x < 0) rocket.x = window.innerWidth;
   if (rocket.x > window.innerWidth) rocket.x = 0;
   if (rocket.y < 0) rocket.y = window.innerHeight;
@@ -39,7 +36,17 @@ export function applyPhysics(rocket) {
   return false;
 }
 
-// Trajectory simulation
+// Asteroid orbiting
+export function updateAsteroids() {
+  asteroids.forEach((a) => {
+    a.angle += a.speed;
+
+    a.x = a.planet.x + Math.cos(a.angle) * a.distance;
+    a.y = a.planet.y + Math.sin(a.angle) * a.distance;
+  });
+}
+
+// Trajectory
 export function simulateTrajectory(rocket) {
   let simX = rocket.x;
   let simY = rocket.y;

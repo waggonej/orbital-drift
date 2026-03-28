@@ -5,11 +5,19 @@ import {
   MAX_FUEL,
   planets,
   fuelPickups,
+  asteroids,
+  lasers,
+  ammo,
+  setAmmo,
   setRocketStart,
   generatePlanets,
 } from "./entities.js";
 
-import { applyPhysics, simulateTrajectory } from "./physics.js";
+import {
+  applyPhysics,
+  simulateTrajectory,
+  updateAsteroids,
+} from "./physics.js";
 
 const THRUST = 0.1;
 const ROTATION_SPEED = 0.05;
@@ -27,6 +35,18 @@ const keys = {
 export function initGame(canvas) {
   window.addEventListener("keydown", (e) => {
     if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+
+    if (e.key.toLowerCase() === "f" && ammo > 0) {
+      lasers.push({
+        x: rocket.x,
+        y: rocket.y,
+        vx: Math.cos(rocket.angle) * 6,
+        vy: Math.sin(rocket.angle) * 6,
+        life: 100,
+      });
+
+      setAmmo(ammo - 1);
+    }
 
     if (e.code === "Space" && gameOver) resetGame(canvas);
     if (e.code === "Escape") returnToMenu(canvas);
@@ -87,6 +107,36 @@ function update(canvas) {
   const collision = applyPhysics(rocket);
   if (collision) gameOver = true;
 
+  updateAsteroids();
+
+  // Lasers
+  for (let i = lasers.length - 1; i >= 0; i--) {
+    const l = lasers[i];
+
+    l.x += l.vx;
+    l.y += l.vy;
+    l.life--;
+
+    if (l.life <= 0) {
+      lasers.splice(i, 1);
+      continue;
+    }
+
+    for (let j = asteroids.length - 1; j >= 0; j--) {
+      const a = asteroids[j];
+
+      const dx = l.x - a.x;
+      const dy = l.y - a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < a.radius) {
+        asteroids.splice(j, 1);
+        lasers.splice(i, 1);
+        break;
+      }
+    }
+  }
+
   // Fuel pickup collision
   for (let i = fuelPickups.length - 1; i >= 0; i--) {
     const pickup = fuelPickups[i];
@@ -96,7 +146,7 @@ function update(canvas) {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance < pickup.radius + rocket.radius) {
-      setFuel(Math.min(fuel + 30, MAX_FUEL));
+      setFuel(Math.min(fuel + 10, MAX_FUEL));
       fuelPickups.splice(i, 1);
     }
   }
@@ -107,20 +157,33 @@ function draw(canvas) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Planets
-  planets.forEach((planet) => {
+  planets.forEach((p) => {
     ctx.beginPath();
-    ctx.arc(planet.x, planet.y, planet.radius, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
     ctx.strokeStyle = "blue";
     ctx.stroke();
   });
 
+  // Asteroids
+  ctx.fillStyle = "gray";
+  asteroids.forEach((a) => {
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, a.radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
   // Fuel pickups
   ctx.fillStyle = "yellow";
-  ctx.font = "14px Arial";
-  ctx.textAlign = "center";
+  fuelPickups.forEach((f) => {
+    ctx.fillText("F", f.x, f.y);
+  });
 
-  fuelPickups.forEach((pickup) => {
-    ctx.fillText("F", pickup.x, pickup.y);
+  // Lasers
+  ctx.fillStyle = "red";
+  lasers.forEach((l) => {
+    ctx.beginPath();
+    ctx.arc(l.x, l.y, 3, 0, Math.PI * 2);
+    ctx.fill();
   });
 
   // Trajectory
@@ -148,28 +211,18 @@ function draw(canvas) {
 
   ctx.restore();
 
-  // Timer
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  // UI
   ctx.fillStyle = "white";
+  ctx.fillText(`Ammo: ${ammo}`, 20, canvas.height - 50);
+
+  const fuelPercent = fuel / MAX_FUEL;
+  ctx.strokeRect(20, canvas.height - 30, 150, 10);
+  ctx.fillRect(20, canvas.height - 30, 150 * fuelPercent, 10);
+
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   ctx.fillText(`${elapsed}s`, canvas.width - 60, canvas.height - 20);
 
-  // Fuel bar
-  const barWidth = 150;
-  const barHeight = 10;
-  const fuelPercent = fuel / MAX_FUEL;
-
-  ctx.strokeStyle = "white";
-  ctx.strokeRect(20, canvas.height - 30, barWidth, barHeight);
-
-  ctx.fillStyle = "lime";
-  ctx.fillRect(
-    20,
-    canvas.height - 30,
-    barWidth * fuelPercent,
-    barHeight
-  );
-
   if (gameOver) {
-    ctx.fillText("Game Over - Press Space", canvas.width / 2, canvas.height / 2);
+    ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2);
   }
 }

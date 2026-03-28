@@ -8,12 +8,18 @@ export const rocket = {
   radius: 10,
 };
 
-// Fuel (reduced to 1/3)
+// Fuel
 export const MAX_FUEL = 33;
 export let fuel = MAX_FUEL;
 
 export function setFuel(value) {
   fuel = value;
+}
+
+// Ammo
+export let ammo = 10;
+export function setAmmo(value) {
+  ammo = value;
 }
 
 // Planets
@@ -22,7 +28,13 @@ export let planets = [];
 // Fuel pickups
 export let fuelPickups = [];
 
-// Player spawn position helper
+// Asteroids
+export let asteroids = [];
+
+// Lasers
+export let lasers = [];
+
+// Player start
 function getPlayerStart(canvas) {
   return {
     x: canvas.width * (1 / 8),
@@ -30,7 +42,7 @@ function getPlayerStart(canvas) {
   };
 }
 
-// Initialize rocket
+// Rocket start
 export function setRocketStart(canvas) {
   const start = getPlayerStart(canvas);
   rocket.x = start.x;
@@ -40,97 +52,57 @@ export function setRocketStart(canvas) {
   rocket.angle = 0;
 }
 
-// 🔍 Position validation helper
-function isPositionValid(x, y, radius, canvas) {
-  const padding = 80; // buffer distance
-
-  // 1. Avoid player start area
-  const start = getPlayerStart(canvas);
-  const dxStart = x - start.x;
-  const dyStart = y - start.y;
-  const distStart = Math.sqrt(dxStart * dxStart + dyStart * dyStart);
-
-  if (distStart < padding) return false;
-
-  // 2. Avoid other planets
-  for (let planet of planets) {
-    const dx = x - planet.x;
-    const dy = y - planet.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < planet.radius + radius + 20) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-// Generate planets + fuel
+// Generate world
 export function generatePlanets(canvas) {
   planets = [];
   fuelPickups = [];
+  asteroids = [];
+  lasers = [];
+  ammo = 10;
 
   const planetCount = 2 + Math.floor(Math.random() * 2);
 
-  // Generate planets safely
-  let attempts = 0;
-  while (planets.length < planetCount && attempts < 100) {
-    attempts++;
-
+  for (let i = 0; i < planetCount; i++) {
     const radius = 25 + Math.random() * 25;
     const x = Math.random() * canvas.width;
     const y = Math.random() * canvas.height;
 
-    if (!isPositionValid(x, y, radius, canvas)) continue;
-
-    planets.push({
+    const planet = {
       x,
       y,
       radius,
       mass: 1000 + Math.random() * 1500,
-    });
+    };
+
+    planets.push(planet);
+
+    // Asteroids orbiting this planet
+    const asteroidCount = 2 + Math.floor(Math.random() * 3);
+
+    for (let j = 0; j < asteroidCount; j++) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = planet.radius + 50 + Math.random() * 50;
+
+      asteroids.push({
+        planet,
+        angle,
+        distance,
+        speed: 0.01 + Math.random() * 0.01,
+        radius: 6,
+        x: 0,
+        y: 0,
+      });
+    }
   }
 
-  // Generate fuel pickups safely
+  // Fuel pickups
   const fuelCount = 2 + Math.floor(Math.random() * 2);
-  attempts = 0;
 
-  while (fuelPickups.length < fuelCount && attempts < 100) {
-    attempts++;
-
-    const radius = 10;
-    const x = Math.random() * canvas.width;
-    const y = Math.random() * canvas.height;
-
-    // Check against planets
-    let valid = true;
-
-    for (let planet of planets) {
-      const dx = x - planet.x;
-      const dy = y - planet.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance < planet.radius + radius + 10) {
-        valid = false;
-        break;
-      }
-    }
-
-    // Check player start area
-    const start = getPlayerStart(canvas);
-    const dxStart = x - start.x;
-    const dyStart = y - start.y;
-    const distStart = Math.sqrt(dxStart * dxStart + dyStart * dyStart);
-
-    if (distStart < 80) valid = false;
-
-    if (!valid) continue;
-
+  for (let i = 0; i < fuelCount; i++) {
     fuelPickups.push({
-      x,
-      y,
-      radius,
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      radius: 10,
     });
   }
 }
