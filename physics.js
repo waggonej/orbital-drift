@@ -1,0 +1,72 @@
+import { planets } from "./entities.js";
+
+const G = 0.5;
+const FRICTION = 0.999;
+
+// Apply gravity + movement
+export function applyPhysics(rocket) {
+  planets.forEach((planet) => {
+    const dx = planet.x - rocket.x;
+    const dy = planet.y - rocket.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Collision
+    if (distance < planet.radius + rocket.radius) {
+      return true; // signal collision
+    }
+
+    const force = (G * planet.mass) / (distance * distance);
+    const angle = Math.atan2(dy, dx);
+
+    rocket.vx += Math.cos(angle) * force;
+    rocket.vy += Math.sin(angle) * force;
+  });
+
+  rocket.x += rocket.vx;
+  rocket.y += rocket.vy;
+
+  rocket.vx *= FRICTION;
+  rocket.vy *= FRICTION;
+
+  return false;
+}
+
+// Trajectory simulation
+export function simulateTrajectory(rocket) {
+  let simX = rocket.x;
+  let simY = rocket.y;
+  let simVX = rocket.vx;
+  let simVY = rocket.vy;
+
+  const TIME_STEP = 0.5;
+  const points = [];
+
+  for (let i = 0; i < 300; i++) {
+    for (let planet of planets) {
+      const dx = planet.x - simX;
+      const dy = planet.y - simY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < planet.radius + rocket.radius) {
+        points.push({ x: simX, y: simY });
+        return points;
+      }
+
+      const force = (G * planet.mass) / (distance * distance);
+      const angle = Math.atan2(dy, dx);
+
+      simVX += Math.cos(angle) * force * TIME_STEP;
+      simVY += Math.sin(angle) * force * TIME_STEP;
+    }
+
+    simVX *= FRICTION;
+    simVY *= FRICTION;
+
+    simX += simVX * TIME_STEP;
+    simY += simVY * TIME_STEP;
+
+    points.push({ x: simX, y: simY });
+  }
+
+  return points;
+}
