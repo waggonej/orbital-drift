@@ -34,6 +34,9 @@ export let asteroids = [];
 // Lasers
 export let lasers = [];
 
+// Particles (NEW)
+export let particles = [];
+
 // Player start
 function getPlayerStart(canvas) {
   return {
@@ -58,6 +61,7 @@ export function generatePlanets(canvas) {
   fuelPickups = [];
   asteroids = [];
   lasers = [];
+  particles = [];
   ammo = 10;
 
   const planetCount = 2 + Math.floor(Math.random() * 2);
@@ -76,7 +80,6 @@ export function generatePlanets(canvas) {
 
     planets.push(planet);
 
-    // Asteroids orbiting this planet
     const asteroidCount = 2 + Math.floor(Math.random() * 3);
 
     for (let j = 0; j < asteroidCount; j++) {
@@ -95,7 +98,6 @@ export function generatePlanets(canvas) {
     }
   }
 
-  // Fuel pickups
   const fuelCount = 2 + Math.floor(Math.random() * 2);
 
   for (let i = 0; i < fuelCount; i++) {

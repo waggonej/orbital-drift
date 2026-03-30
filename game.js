@@ -7,6 +7,7 @@ import {
   fuelPickups,
   asteroids,
   lasers,
+  particles,
   ammo,
   setAmmo,
   setRocketStart,
@@ -109,6 +110,17 @@ function update(canvas) {
 
   updateAsteroids();
 
+  // Ship collision with asteroids
+  for (let a of asteroids) {
+    const dx = rocket.x - a.x;
+    const dy = rocket.y - a.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < rocket.radius + a.radius) {
+      gameOver = true;
+    }
+  }
+
   // Lasers
   for (let i = lasers.length - 1; i >= 0; i--) {
     const l = lasers[i];
@@ -130,6 +142,17 @@ function update(canvas) {
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (dist < a.radius) {
+        // Explosion particles
+        for (let k = 0; k < 10; k++) {
+          particles.push({
+            x: a.x,
+            y: a.y,
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.5) * 3,
+            life: 30,
+          });
+        }
+
         asteroids.splice(j, 1);
         lasers.splice(i, 1);
         break;
@@ -137,7 +160,20 @@ function update(canvas) {
     }
   }
 
-  // Fuel pickup collision
+  // Update particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+
+  // Fuel pickups
   for (let i = fuelPickups.length - 1; i >= 0; i--) {
     const pickup = fuelPickups[i];
 
@@ -172,7 +208,15 @@ function draw(canvas) {
     ctx.fill();
   });
 
-  // Fuel pickups
+  // Particles
+  ctx.fillStyle = "orange";
+  particles.forEach((p) => {
+    ctx.globalAlpha = p.life / 30;
+    ctx.fillRect(p.x, p.y, 3, 3);
+  });
+  ctx.globalAlpha = 1;
+
+  // Fuel
   ctx.fillStyle = "yellow";
   fuelPickups.forEach((f) => {
     ctx.fillText("F", f.x, f.y);
